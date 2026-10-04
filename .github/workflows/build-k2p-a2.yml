@@ -1,0 +1,31 @@
+name: Build K2P A2 reference firmware
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            automake autopoint bison build-essential cmake cpio curl fakeroot \
+            flex gawk gettext gperf help2man kmod libgmp-dev libltdl-dev \
+            libmpc-dev libmpfr-dev libncurses-dev libtool-bin pkg-config \
+            python3-docutils rpcsvc-proto texinfo unzip wget xxd zlib1g-dev
+      - name: Download toolchain
+        run: cd toolchain-mipsel && sh dl_toolchain.sh
+      - name: Build K2P A2 image
+        run: cd trunk && fakeroot ./build_firmware_ci K2P_REF
+      - name: Record checksums
+        run: cd trunk/images && sha256sum *.trx > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: K2P-A2-reference
+          path: |
+            trunk/images/*.trx
+            trunk/images/SHA256SUMS
+          if-no-files-found: error
